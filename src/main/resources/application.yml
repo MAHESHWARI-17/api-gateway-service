@@ -1,0 +1,64 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: apigateway
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      routes:
+        # Identity & Account Service (port 8091)
+        - id: accountidentityservice
+          uri: lb://ACCOUNTIDENTITYSERVICE
+          predicates:
+            - Path=/auth/**,/accounts/**
+
+        # Admin Portal routes → Identity Service
+        - id: adminservice
+          uri: lb://ACCOUNTIDENTITYSERVICE
+          predicates:
+            - Path=/admin/**
+
+        # Compliance Officer Portal routes → Identity Service
+        - id: complianceservice
+          uri: lb://ACCOUNTIDENTITYSERVICE
+          predicates:
+            - Path=/compliance/**
+
+        # Transaction Service (port 8092)
+        - id: transactionservice
+          uri: lb://TRANSACTIONSERVICE
+          predicates:
+            - Path=/transactions/**
+
+        # Audit Service (port 8093) — date-range transaction queries
+        - id: auditservice
+          uri: lb://AUDITSERVICE
+          predicates:
+            - Path=/audit/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
